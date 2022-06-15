@@ -45,7 +45,6 @@ class WorkerMenus(CommonMenus):
 
     @staticmethod
     def specify_new_order_status_menu(existing_status_ids: List[int]) -> BaseMenuWithChoice:
-        print(existing_status_ids)
         settings = {
             'choice': {
                 'expected_type': 'int',

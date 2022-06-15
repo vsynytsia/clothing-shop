@@ -43,13 +43,20 @@ def require_fill(func):
     return inner
 
 
+def cant_exceed_max_length(func):
+    def inner(*args, **kwargs):
+        if len(args[0]) > 255:
+            raise ValueError('Maximum input length exceeded! Please, try again!')
+        return func(*args, **kwargs)
+
+    return inner
+
+
 @require_additional_validation
+@cant_exceed_max_length
 @require_fill
 def validate_string_input(user_input: str, **kwargs) -> str:
     user_input = user_input.strip()
-
-    if len(user_input) > 255:
-        raise ValueError('Maximum string length exceeded')
 
     if kwargs.get('expected_values', None) is not None and user_input not in kwargs.get('expected_values', []):
         raise ValueError(f'Expected one of the options: {kwargs["expected_values"]},'
@@ -59,9 +66,13 @@ def validate_string_input(user_input: str, **kwargs) -> str:
 
 
 @require_additional_validation
+@cant_exceed_max_length
 @require_fill
 def validate_int_input(user_input: str, **kwargs) -> int:
     user_input = user_input.strip()
+
+    if len(user_input) > 255:
+        raise ValueError('Maximum string length exceeded')
 
     # re-raise exception so appropriate message is displayed
     try:
@@ -84,11 +95,12 @@ def validate_int_input(user_input: str, **kwargs) -> int:
 
 
 @require_additional_validation
+@cant_exceed_max_length
 @require_fill
 def validate_float_input(user_input: str, **kwargs) -> float:
     user_input = user_input.strip()
 
-    # re-raise exception so appropriate message id displayed
+    # re-raise exception so appropriate message is displayed
     try:
         user_input = float(user_input)
     except ValueError:
