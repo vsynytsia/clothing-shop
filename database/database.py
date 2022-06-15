@@ -19,7 +19,6 @@ class Database:
     def _execute_and_commit(self, query: str, params: Optional[Tuple], return_id: bool) -> Optional[int]:
         self.cursor.execute(query, params)
         self.db.commit()
-
         return self.cursor.lastrowid if return_id else None
 
     def _execute_and_fetchall(self, query: str, params: Optional[Tuple]) -> List[dict]:
@@ -29,41 +28,25 @@ class Database:
     def select_user_by_email_and_phash(self, email: str, password_hash: str) -> List[dict]:
         query = 'select * from user as u where (u.email = %s and u.password_hash = %s)'
         params = (email, password_hash)
-
-        res = self._execute_and_fetchall(query, params)
-        return res
+        return self._execute_and_fetchall(query, params=params)
 
     def select_all_columns_from_table(self, table: str) -> List[dict]:
         query = 'select * from `%s`' % table
-
-        self.cursor.execute(query)
-        res = self.cursor.fetchall()
-        return res
+        return self._execute_and_fetchall(query, params=None)
 
     def select_column_from_table(self, column: str, table: str) -> List[dict]:
         query = 'select %s from %s' % (column, table)
-
         return self._execute_and_fetchall(query, params=None)
 
     def select_clothes_by_id(self, clothes_id: int) -> List[dict]:
         query = 'select * from clothes as c where c.id = %s'
         params = (clothes_id,)
-
-        res = self._execute_and_fetchall(query, params=params)
-        return res
-
-    def select_clothes_type_by_id(self, id_: int) -> str:
-        query = 'select ct.type from clothes_type as ct where ct.id = %s'
-        params = (id_,)
-
-        res = self._execute_and_fetchall(query, params=params)
-        return list(res[0].values())[0]
+        return self._execute_and_fetchall(query, params=params)
 
     def select_user_orders(self, user_id: int) -> List[dict]:
         query = 'select o.id, o.date_time, s.status from `order` as o, status as s' \
                 ' where o.user_id = %s and o.status_id = s.id '
         params = (user_id,)
-
         return self._execute_and_fetchall(query, params=params)
 
     def select_single_user_order(self, order_id: int) -> List[dict]:
@@ -73,7 +56,6 @@ class Database:
                 ' join clothes c on c.id = i.clothes_id' \
                 ' where order_id = %s and o.status_id = s.id'
         params = (order_id,)
-
         return self._execute_and_fetchall(query, params=params)
 
     def insert_clothes(self, clothes: Clothes, return_id: bool = False) -> Optional[int]:
@@ -128,20 +110,13 @@ class Database:
         query = 'delete from %s where %s.id = %s' % (table, table, id_)
         return self._execute_and_commit(query, params=None, return_id=False)
 
-    def calculate_order_total(self, order_id: int) -> float:
-        query = 'select sum(io.total) from item_ordered as io where io.order_id = %s order by io.order_id'
-        params = (order_id,)
-        res = self._execute_and_fetchall(query, params=params)
-        return list(res[0].values())[0]
-
     def update_value_by_id(self, table: str, column: str, new_value, id_: int) -> None:
         query = 'update {} set {} = %s where id = %s'.format(table, column)
         params = (new_value, id_)
-        self._execute_and_commit(query, params=params, return_id=False)
+        return self._execute_and_commit(query, params=params, return_id=False)
 
     def _on_inserted_item_ordered(self, inserted_item: ItemOrdered) -> None:
         query = 'update clothes set in_stock = %s where clothes.id = %s'
-
         clothes = self.select_clothes_by_id(inserted_item.clothes_id)[0]
         params = (clothes['in_stock'] - inserted_item.quantity, inserted_item.clothes_id)
-        self._execute_and_commit(query, params=params, return_id=False)
+        return self._execute_and_commit(query, params=params, return_id=False)
